@@ -1,0 +1,99 @@
+{% extends "base.html" %} {% block content %}
+
+<h2>Document Classifier</h2>
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> -->
+<div>
+    <form id="upload-file" method="post" enctype="multipart/form-data">
+        <script>
+
+            document.getElementById("camera-img-form").innerHTML=`<form id="capture-img">
+                <video id="video" width="400" height="240" autoplay style="background-color: grey"></video>
+                <button id="send">Capture</button>
+                <canvas id="canvas" width="400" height="240" style="background-color: grey"></canvas>
+            </form>`
+
+            // Elements for taking the snapshot
+            var video = document.getElementById('video');
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');
+            
+            // Trigger photo take
+            document.getElementById("send").addEventListener("click", function(event) {
+                console.log(event,"EVENT")
+                context.drawImage(video, 0, 0, 400, 240); // copy frame from <video>
+                // var temp=canvas.toBlob(upload, "image/jpeg"); 
+                // console.log(temp,"File Bob")  // convert to file and execute function `upload` 
+                var temp = canvas.toDataURL("image/jpeg")
+                console.log(temp,"Temp var")
+            });
+
+
+            async function openCamera(){
+            
+                // Get access to the camera!
+                if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    // Not adding `{ audio: true }` since we only want video now
+                    let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    console.log(stream,"Got Stream")
+                    video.srcObject=stream
+                    console.log(video,"Got Video")  
+
+                }
+            
+            
+                function upload(file) {
+                    // create form and append file
+                    var formdata =  new FormData();
+                    formdata.append("snap", file);
+                    
+                    // create AJAX requests POST with file
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", "{{ url_for('upload') }}", true);
+                    xhr.onload = function() {
+                        if(this.status = 200) {
+                            console.log(this.response);
+                        } else {
+                            console.error(xhr);
+                        }
+                        alert(this.response);
+                    };
+                    xhr.send(formdata);
+                };
+            }
+               
+        </script>
+
+        <label for="img-capture-Upload" class="upload-label" onClick="openCamera()">
+            Camera
+        </label>
+
+        <label for="imageUpload" class="upload-label">
+            Choose...
+        </label>
+        <input type="file" name="file" id="imageUpload" accept=".png, .jpg, .jpeg">
+    </form>
+
+    <div id="camera-img-form">
+
+    </div>
+
+    <div class="image-section" style="display:none;">
+        <div class="img-preview">
+            <div id="imagePreview">
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary btn-lg " id="btn-predict">Predict!</button>
+        </div>
+    </div>
+
+    <div class="loader" style="display:none;"></div>
+
+    <h3 id="result">
+        <span> </span>
+    </h3>
+
+</div>
+
+{% endblock %}
+
