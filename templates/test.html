@@ -1,0 +1,125 @@
+{% extends "base.html" %} {% block content %}
+<script src="https://unpkg.com/blob-util/dist/blob-util.min.js"></script>
+<script>
+
+    function b64toBlob(b64Data, contentType, sliceSize) {
+        var byteCharacters = window.atob(b64Data);
+        var byteArrays = [];
+      
+        contentType = contentType || '';
+        sliceSize = sliceSize || 512;
+      
+        for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+          var slice = byteCharacters.slice(offset, offset + sliceSize);
+          var byteNumbers = new Array(slice.length);
+          var byteArray;
+      
+          for (var i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+      
+          byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
+        }
+      
+        var blob = new Blob(byteArrays, {type: contentType});
+        return blob;
+      }
+
+    async function openCamera(){
+
+        document.querySelector("#camera-img-form").innerHTML=`<form id="capture-img">
+            <video id="video" width="400" height="240" autoplay style="background-color: grey"></video>
+            <button id="send">Capture</button>
+            <canvas id="canvas" width="400" height="240" style="background-color: grey"></canvas>
+        </form>`
+
+        // Elements for taking the snapshot
+        var video = document.getElementById('video');
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+
+        // Get access to the camera!
+        if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Not adding `{ audio: true }` since we only want video now
+            let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            console.log(stream,"Got Stream")
+            video.srcObject=stream
+            console.log(video,"Got Video")  
+
+        }
+
+
+        // Trigger photo take
+        document.getElementById("send").addEventListener("click", async function(event) {
+            console.log(event,"EVENT")
+            event.preventDefault();
+            context.drawImage(video, 0, 0, 400, 240); // copy frame from <video>
+            // var temp=canvas.toBlob(upload, "image/jpeg"); 
+            // console.log(temp,"File Bob")  // convert to file and execute function `upload` 
+            var img = canvas.toDataURL("image/jpeg")
+            let input ={};
+            input.img=img;
+
+            //console.log(img,"Temp var")
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $('#imagePreview').css('background-image', 'url(' + input.img + ')');
+                $('#imagePreview').hide();
+                $('#imagePreview').fadeIn(650);
+            }
+            console.log(input.img,"IMG PAth");
+            
+            var img_new =blobUtil.canvasToBlob(canvas, 'image/jpeg').then((res)=> {console.log(res)
+                reader.readAsDataURL(res);
+            
+            })
+            //console.log(img_new,"CONVERTED IMG PAth");
+            //reader.readAsDataURL(img_new);
+            //console.log(typeof(input.img))  
+            
+        });
+
+
+    }
+        
+    </script>
+
+<h2>Document Classifier</h2>
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> -->
+<div>
+    <form id="upload-file" method="post" enctype="multipart/form-data">
+
+        <label for="img-capture-Upload" class="upload-label" onClick="openCamera()">
+            Camera
+        </label>
+
+        <label for="imageUpload" class="upload-label">
+            Choose...
+        </label>
+        <input type="file" name="file" id="imageUpload" accept=".png, .jpg, .jpeg">
+    </form>
+
+    <div id="camera-img-form">
+
+    </div>
+
+    <div class="image-section" style="display:none;">
+        <div class="img-preview">
+            <div id="imagePreview">
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary btn-lg " id="btn-predict">Predict!</button>
+        </div>
+    </div>
+
+    <div class="loader" style="display:none;"></div>
+
+    <h3 id="result">
+        <span> </span>
+    </h3>
+
+</div>
+
+{% endblock %}
