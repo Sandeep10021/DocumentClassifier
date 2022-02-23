@@ -17,15 +17,6 @@ $(document).ready(function () {
             reader.readAsDataURL(input.files[0]);
         }
 
-        if (input && input.img){
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                $('#imagePreview').css('background-image', 'url(' + input.img + ')');
-                $('#imagePreview').hide();
-                $('#imagePreview').fadeIn(650);
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
     }
     $("#imageUpload").change(function () {
         $('.image-section').show();

@@ -68,7 +68,7 @@ def upload():
                 basepath, 'uploads', secure_filename(str(uuid.uuid1())+'.jpg'))
         else:
             file_path = os.path.join(
-                basepath, 'uploads', secure_filename(f.filename+'.jpg'))
+                basepath, 'uploads', secure_filename(f.filename))
         f.save(file_path)
 
         # Make prediction
