@@ -30,6 +30,12 @@ input[type="file"] {
     cursor: pointer;
 }
 
+.video-container{
+    background: grey;
+    object-fit: fill;
+    
+}
+
 .upload-label:hover{
     background: #34495E;
     color: #39D2B4;

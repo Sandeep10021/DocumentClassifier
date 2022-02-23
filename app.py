@@ -2,6 +2,7 @@ import sys
 import os
 import glob
 import re
+import uuid
 import numpy as np
 
 # Keras
@@ -37,46 +38,51 @@ def model_predict(img_path, model):
    
     classes=['AadharCard', 'DrivingLicence', 'EmiratesID', 'PanCard', 'VoterID']
 
-    preds = model.predict(x)
-    preds=np.argmax(preds, axis=1)
+    preds_acc = model.predict(x)
+    #print(preds_acc)
+    preds=np.argmax(preds_acc, axis=1)
     #print(classes[preds[0]])
+    acc=str(round(max(preds_acc[0])*100,2))+"%"
     
-    return classes[preds[0]]
+    return classes[preds[0]]+'('+acc+')'
     
 
 
 @app.route('/', methods=['GET'])
 def index():
     # Main page
-    return render_template('test.html')
+    return render_template('index.html')
 
 
 @app.route('/predict', methods=['GET', 'POST'])
 def upload():
+    print("REQUEST:", request.files)
     if request.method == 'POST':
-        # Get the file from post request
-        fs = request.files.get('snap')
-        if fs:
-            # Save the file to ./uploads
-            file_path='uploads/image.jpg'
-            fs.save(file_path)
-            
-        else:
-            f = request.files['file']
-
-            # Save the file to ./uploads
-            basepath = os.path.dirname(__file__)
+    
+        f = request.files.get('file')
+        print("F",f.filename)
+        # Save the file to ./uploads
+        basepath = os.path.dirname(__file__)
+        if f.filename=="blob":
             file_path = os.path.join(
-                basepath, 'uploads', secure_filename(f.filename))
-            f.save(file_path)
+                basepath, 'uploads', secure_filename(str(uuid.uuid1())+'.jpg'))
+        else:
+            file_path = os.path.join(
+                basepath, 'uploads', secure_filename(f.filename+'.jpg'))
+        f.save(file_path)
 
         # Make prediction
+        print(file_path)
         preds = model_predict(file_path, model)
         result=preds
+        print("RESULT : ",result)
         return result
     return None
 
+	
+
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    #app.run(host='0.0.0.0', port=8005)
+    #app.run(debug=True)
+    app.run(host='0.0.0.0', port=8005)

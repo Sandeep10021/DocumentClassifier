@@ -38,7 +38,7 @@ $(document).ready(function () {
     // Predict
     $('#btn-predict').click(function () {
         var form_data = new FormData($('#upload-file')[0]);
-
+        console.log("api file", form_data);
         // Show loading animation
         $(this).hide();
         $('.loader').show();
@@ -50,7 +50,7 @@ $(document).ready(function () {
             data: form_data,
             contentType: false,
             cache: false,
-            processData: false,
+            processData: false,   
             async: true,
             success: function (data) {
                 // Get and display the result

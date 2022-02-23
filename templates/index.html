@@ -1,67 +1,130 @@
 {% extends "base.html" %} {% block content %}
+<script src="https://unpkg.com/blob-util/dist/blob-util.min.js"></script>
+
+<script>
+
+    async function onChooseClick(){
+        var imgSection = document.getElementById("image_section");
+        imgSection.style.display ="block";
+        var camera_form = document.querySelector("#camera-img-form");
+        if(camera_form){
+            camera_form.innerHTML = null;
+        } 
+        var canvas = document.querySelector("canvas");
+        if(canvas){
+            canvas = null;
+        } 
+        document.querySelector("#result").text="";
+    }
+
+    async function openCamera(){
+        var imgSection = document.getElementById("image_section");
+        imgSection.style.display ="none";
+        document.querySelector("#result").text="";
+        document.querySelector("#camera-img-form").innerHTML=`<form id="capture-img">
+            
+            <video id="video" width="400" height="240" autoplay class="video-container"></video>
+            <canvas id="canvas" width="400" height="240" style="background-color: grey, margin-left:20px, display:none"></canvas>
+            <div>
+                <label id="send" class="upload-label">
+                    Capture
+                </label>
+
+                <label id="predict_button" class="btn btn-primary btn-lg" style="display: none" >
+                    Predict
+                </label>
+            </div>
+        </form>`
+
+        // Elements for taking the snapshot
+        var video = document.getElementById('video');
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+
+        // Get access to the camera!
+        if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Not adding `{ audio: true }` since we only want video now
+            let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            console.log(stream,"Got Stream")
+            video.srcObject=stream
+            console.log(video,"Got Video")  
+
+        }
+
+        var captured_image;
+
+        // Trigger photo take
+        document.getElementById("send").addEventListener("click", async function(event) {
+            console.log(event,"EVENT")
+            event.preventDefault();
+            context.drawImage(video, 0, 0, 400, 240); // copy frame from <video>
+           
+            var img = canvas.toDataURL("image/jpeg")
+            let input ={};
+            input.img=img;
+            
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $('#imagePreview').css('background-image', 'url(' + input.img + ')');
+                $('#imagePreview').hide();
+                $('#imagePreview').fadeIn(650);
+            }
+            console.log(input.img,"IMG PAth");
+            
+            var img_new =blobUtil.canvasToBlob(canvas, 'image/jpeg').then((res)=> {console.log(res)
+                reader.readAsDataURL(res);
+                              
+
+                captured_image = res;
+            })
+            var predict_button = document.getElementById("predict_button")
+            predict_button.style = "block";
+            var canvas_frame = document.getElementById("send")
+            canvas_frame.style = "block";
+            
+            
+        });
+
+        document.getElementById("predict_button").addEventListener("click", async function(event) {
+           
+            var formdata = new FormData(); 
+            formdata.append("file",captured_image)
+            $('.loader').show();
+            $.ajax({
+                type: 'POST',
+                url: '/predict',
+                data: formdata,
+                contentType: false,
+                cache: false,
+                cors: true ,
+                secure: true,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                },
+                processData: false,
+                async: true,
+                success: function (data) {
+                    // Get and display the result
+                    $('.loader').hide();
+                    $('#result').fadeIn(600);
+                    $('#result').text(' Document Type:  ' + data);
+                    console.log('Success!');
+                },
+            });
+        })
+
+    }
+
+
+
+
+        
+    </script>
 
 <h2>Document Classifier</h2>
-<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"> -->
+
 <div>
     <form id="upload-file" method="post" enctype="multipart/form-data">
-        <script>
-
-            document.getElementById("camera-img-form").innerHTML=`<form id="capture-img">
-                <video id="video" width="400" height="240" autoplay style="background-color: grey"></video>
-                <button id="send">Capture</button>
-                <canvas id="canvas" width="400" height="240" style="background-color: grey"></canvas>
-            </form>`
-
-            // Elements for taking the snapshot
-            var video = document.getElementById('video');
-            var canvas = document.getElementById('canvas');
-            var context = canvas.getContext('2d');
-            
-            // Trigger photo take
-            document.getElementById("send").addEventListener("click", function(event) {
-                console.log(event,"EVENT")
-                context.drawImage(video, 0, 0, 400, 240); // copy frame from <video>
-                // var temp=canvas.toBlob(upload, "image/jpeg"); 
-                // console.log(temp,"File Bob")  // convert to file and execute function `upload` 
-                var temp = canvas.toDataURL("image/jpeg")
-                console.log(temp,"Temp var")
-            });
-
-
-            async function openCamera(){
-            
-                // Get access to the camera!
-                if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    // Not adding `{ audio: true }` since we only want video now
-                    let stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    console.log(stream,"Got Stream")
-                    video.srcObject=stream
-                    console.log(video,"Got Video")  
-
-                }
-            
-            
-                function upload(file) {
-                    // create form and append file
-                    var formdata =  new FormData();
-                    formdata.append("snap", file);
-                    
-                    // create AJAX requests POST with file
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("POST", "{{ url_for('upload') }}", true);
-                    xhr.onload = function() {
-                        if(this.status = 200) {
-                            console.log(this.response);
-                        } else {
-                            console.error(xhr);
-                        }
-                        alert(this.response);
-                    };
-                    xhr.send(formdata);
-                };
-            }
-               
-        </script>
 
         <label for="img-capture-Upload" class="upload-label" onClick="openCamera()">
             Camera
@@ -70,14 +133,14 @@
         <label for="imageUpload" class="upload-label">
             Choose...
         </label>
-        <input type="file" name="file" id="imageUpload" accept=".png, .jpg, .jpeg">
+        <input type="file" name="file" id="imageUpload" accept=".png, .jpg, .jpeg" onClick="onChooseClick()">
     </form>
 
     <div id="camera-img-form">
 
     </div>
 
-    <div class="image-section" style="display:none;">
+    <div id="image_section" class="image-section" style="display:none;">
         <div class="img-preview">
             <div id="imagePreview">
             </div>
@@ -96,4 +159,3 @@
 </div>
 
 {% endblock %}
-
